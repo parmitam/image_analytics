@@ -15,12 +15,13 @@ AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
 Following code excerpt shows how to access the data from the hcp-openaccess s3 bucket.
 ```python
 import botocore.session
+import os.path as op
 import boto3
 boto3.setup_default_session(profile_name='hcp')
 s3 = boto3.resource('s3')
 bucket = s3.Bucket('hcp-openaccess')
 
- data_files = {'./bvals':'HCP/994273/T1w/Diffusion/bvals', 
+data_files = {'./bvals':'HCP/994273/T1w/Diffusion/bvals', 
               './bvecs':'HCP/994273/T1w/Diffusion/bvecs', 
               './data.nii.gz':'HCP/994273/T1w/Diffusion/data.nii.gz'}
          
