@@ -33,6 +33,29 @@ to project directory. Note: They weight in total 1.3GB.
 python ref/download.py
 ```
 
+## Ansible
+A great way of deploying the app is by using [Ansible](http://docs.ansible.com/ansible/latest/index.html). 
+
+Firstly you need to install Ansible locally. You can do it using [this tutorial](http://docs.ansible.com/ansible/latest/intro_installation.html).
+Secondly prepare two files `hosts` and `aws_credentials`. First will tell Ansible to what servers deploy the app. 
+Example of `hosts` file for aws ec2 servers:
+```
+[test_group]
+18.196.69.101 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
+18.196.69.102 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
+18.196.69.103 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
+18.196.69.104 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
+```
+IP-s at the beginning of each line represents server IP. tests.pem in the example is local path to pem key assigned to this instance. 
+
+File `aws_credentials` should contain valid s3 hcp credentials. It will be copied to `~/.aws/credentials` on each 
+deployed server.
+
+After installing Ansible and preparing `hosts` and `aws_credentials` you can deploy the app on all servers using command:
+```
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./hosts ansible_setup.yml
+```
+
 # Running
 ## Local
 ```

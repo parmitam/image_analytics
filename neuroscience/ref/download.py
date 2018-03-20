@@ -19,6 +19,5 @@ def download():
             bucket.download_file(data_files[k], k)
             print("Done")
 
-
 if __name__ == "__main__":
     download()
