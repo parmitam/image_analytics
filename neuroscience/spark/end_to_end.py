@@ -33,7 +33,7 @@ def filterforimage(x):
         return True
 
 def unpick(x):
-    import cPickle
+    import cPickle  # Note: for python 3: import _pickle as cPickle
     return cPickle.loads(x)
 
 #filter for mask
@@ -94,7 +94,7 @@ def regroup(x):
     state = None
     for a in list(x[1]):
         imgid = a[0][2]
-        print imgid
+        print(imgid)
         img = np.asarray(a[1][0])
         if state is None:
             shape = img.shape + (288,)
@@ -113,16 +113,7 @@ def fit_model(dt, gtab):
     ten_fit = ten_model.fit(dt[1][0], mask=dt[1][1])
     return (dt[0],ten_fit)
 
-
-
-
-
-
 import numpy as np
-import os.path as op
-import dipy.core.gradients as dpg
-import nibabel as nib
-import datetime
 import sys
 
 if len(sys.argv) == 1:
@@ -134,16 +125,19 @@ numSubjects = int(sys.argv[1])
 from pyspark import SparkContext
 sc = SparkContext()
 
-subjects =[...][:numSubjects]
+subjects = ["100307", "100408", "101006", "101107", "101309", "101410",
+            "101915", "102311", "102816", "103111", "103515", "105014",
+            "105115", "105216", "106016", "106319", "106521", "107321",
+            "108121", "108323", "108525", "108828", "109123", "110411",
+            "111312"][:numSubjects]
 
 s3Paths = ["..."+str(subject) for subject in subjects]
 for path in s3Paths:
-    print path
+    print(path)
 
 imgRDDs = [sc.binaryFiles(s3path, minPartitions = 290) for s3path in s3Paths]
 imgRDD = sc.union(imgRDDs).map(rekey).cache()
 imgRDD.count()
-
 
 #get bvals and bvec files
 gtabRDD = imgRDD.filter(filterbvs)
@@ -176,5 +170,3 @@ tmRDD = denoisedRDD.map(regroup)
 
 tmmRDD = tmRDD.map(lambda x: fit_model(x,bcastGtab )).cache()
 tmmRDD.count()
-
-

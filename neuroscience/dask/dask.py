@@ -1,9 +1,7 @@
 import boto3
-from multiprocessing import Process, Array
 import nibabel as nib
 import numpy as np
-import os.path as op
-import sys, time, itertools, timeit
+import time, itertools, timeit
 
 import dipy.core.gradients as dpg
 import dipy.reconst.dti as dti
@@ -13,15 +11,12 @@ from dipy.denoise.noise_estimate import estimate_sigma
 
 # use multi-processes
 from dask import delayed, compute
-import dask.multiprocessing 
 from distributed import Executor
-import distributed
 
-subjects = [
-"..."]
+subjects = ["..."]
 
 
-def download (id):
+def download(id):
   print("downloading:", id)
   
   session = boto3.session.Session()
