@@ -1,0 +1,54 @@
+- hosts: all
+  name: Clone github repo and install dependencies.
+  vars:
+    homedir: '/home/{{ ansible_user }}'
+    rootdir: '{{ homedir }}/image_analytics'
+    workdir: '{{ rootdir }}/neuroscience'
+  gather_facts: false
+  pre_tasks:
+    - name: install python
+      become: true
+      raw: bash -c "test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)"
+      register: output
+      changed_when: output.stdout != ""
+  tasks:
+    - name: check to see if pip is already installed
+      command: "pip --version"
+      ignore_errors: true
+      register: pip_is_installed
+      changed_when: false
+    - block:
+      - name: download get-pip.py
+        get_url: url=https://bootstrap.pypa.io/get-pip.py  dest=/tmp
+      - name: install pip
+        become: true
+        command: "python /tmp/get-pip.py"
+      - name: delete get-pip.py
+        file: state=absent path=/tmp/get-pip.py
+      when: pip_is_installed.rc != 0
+    - name: Install apt packages
+      become: true
+      apt: name={{item}} state=present
+      with_items:
+        - git
+        - python-dev
+        - gcc
+    - name: Clone repository from github
+      git:
+        repo: 'https://github.com/tpawlowski/image_analytics.git'
+        dest: '{{ rootdir }}'
+        update: no
+    - name: Install requirements
+      become: true
+      pip:
+        requirements: '{{ workdir }}/requirements.txt'
+    - name: Create aws configuration directory
+      file:
+        path: '{{ homedir }}/.aws'
+        state: directory
+        mode: 0755
+    - name: Copy aws_credentials
+      copy:
+        src: aws_credentials
+        dest: '{{ homedir }}/.aws/credentials'
+        mode: 0600

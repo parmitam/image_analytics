@@ -1,0 +1,10 @@
+.idea
+.DS_Store
+*.pyc
+hosts
+hosts.*
+!hosts.template
+aws_credentials
+ansible_setup.retry
+venv
+*.pem
