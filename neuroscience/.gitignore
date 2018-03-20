@@ -8,3 +8,6 @@ aws_credentials
 ansible_setup.retry
 venv
 *.pem
+*_bvals
+*_bvecs
+*.nii.gz

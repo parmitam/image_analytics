@@ -4,7 +4,7 @@ botocore==1.8.46
 certifi==2018.1.18
 click==6.7
 cloudpickle==0.5.2
-dask==0.17.0
+dask==0.17.1
 dipy==0.13.0
 distributed==1.21.0
 docutils==0.14
@@ -14,7 +14,7 @@ HeapDict==1.0.0
 jmespath==0.9.3
 msgpack-python==0.5.4
 nibabel==2.2.1
-numpy==1.14.0
+numpy==1.14.2
 psutil==5.4.3
 py4j==0.10.4
 pyspark==2.2.1

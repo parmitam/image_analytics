@@ -50,14 +50,34 @@ AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX
 AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
 ```
 
-Test data consists of 3 files `bvals`, `bvecs` and `data.nii.gz`. Utility `ref/download.py` can be used to download them
-to project directory. Note: They weight in total 1.3GB.
+Test data consists of 3 files `bvals`, `bvecs` and `data.nii.gz`. Following command lists available cases:
 ```
-python ref/download.py
+aws s3 ls s3://hcp-openaccess/HCP/ --profile hcp
+```
+
+
+Utility `common/download.py` can be used to download them to project directory. Note: Files for single case weight in total 1.3GB.
+```
+python common/download.py 100307
 ```
 
 # Running
 ## Local
 ```
-python ref/ref.py
+python ref/main.py 100307
+```
+
+## Dask
+Start dask scheduler and workers (in multiple consoles/machines):
+```
+dask-scheduler
+dask-worker SHEDULER_IP:8786
+dask-worker SHEDULER_IP:8786
+dask-worker SHEDULER_IP:8786
+dask-worker SHEDULER_IP:8786
+```
+
+On scheduler machine execute:
+```
+python dask/main.py 100307 100408
 ```
