@@ -4,12 +4,14 @@ import dipy.core.gradients as dpg
 import nibabel as nib
 import sys
 from dipy.segment.mask import median_otsu
-from common.download import download
 from time import time
 import datetime
 
+from common.download import download
+from common.subjects import test_subjects
 
-case_id = 100307
+
+case_id = test_subjects[0]
 if len(sys.argv) >= 2:
     case_id = sys.argv[1]
 

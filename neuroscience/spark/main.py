@@ -1,21 +1,26 @@
+import configparser
+import os
+
+
 def rekey(x):
-    subjid = x[0].split("/")[3]
-    imgid = x[0].split("/")[4].split(".")[0]
-    return((subjid,imgid),x[1])
+    subject_id = str(x[0].split("/")[4])
+    file_id = str(x[0].split("/")[7].split(".")[0])
+    return (subject_id, file_id), x[1]
+
 
 def filterbvs(x):
-    if(x[0][1] =='bvals' or x[0][1]=='bvecs'):
+    if x[0][1] == 'bvals' or x[0][1] == 'bvecs':
         return True
     else:
         return False
 
 def rekeygtab(x):
-    return(x[0][0],(x[0][1],x[1]))
+    return x[0][0], (x[0][1], x[1])
 
 # build gtab
 def buildgtab(x):
     import dipy.core.gradients as dpg
-    if x[1][0][0]=='bvals':
+    if x[1][0][0] == 'bvals':
         bvals = x[1][0][1]
         bvecs = x[1][1][1]
     else:
@@ -27,7 +32,7 @@ def buildgtab(x):
 
 #filter imgRDD to only contain images
 def filterforimage(x):
-    if(x[0][1] =='bvals' or x[0][1]=='bvecs'):
+    if x[0][1] == 'bvals' or x[0][1] == 'bvecs':
         return False
     else:
         return True
@@ -117,25 +122,29 @@ import numpy as np
 import sys
 
 if len(sys.argv) == 1:
-    print("Must pass in the number of subjects to use")
+    print("Please provide subject ids as parameters")
     sys.exit(0)
 
-numSubjects = int(sys.argv[1])
+from pyspark import SparkContext, SparkConf
+conf = SparkConf()\
+    .setAppName('neuroscience')\
+    .setMaster('spark://127.0.0.1:7077')\
+    .set("spark.executor.instances", "1")\
+    .set("spark.executor.memory", "12g")
+sc = SparkContext(conf=conf)
 
-from pyspark import SparkContext
-sc = SparkContext()
+config_parser = configparser.ConfigParser()
+config_parser.read_file(open(os.path.join(os.path.expanduser('~'), '.aws', 'credentials')))
+config_parser.sections()
 
-subjects = ["100307", "100408", "101006", "101107", "101309", "101410",
-            "101915", "102311", "102816", "103111", "103515", "105014",
-            "105115", "105216", "106016", "106319", "106521", "107321",
-            "108121", "108323", "108525", "108828", "109123", "110411",
-            "111312"][:numSubjects]
+sc._jsc.hadoopConfiguration().set("fs.s3a.access.key", config_parser.get('hcp', 'AWS_ACCESS_KEY_ID'))
+sc._jsc.hadoopConfiguration().set("fs.s3a.secret.key", config_parser.get('hcp', 'AWS_SECRET_ACCESS_KEY'))
 
-s3Paths = ["..."+str(subject) for subject in subjects]
+s3Paths = ['s3a://hcp-openaccess/HCP/{0}/T1w/Diffusion/{1}'.format(subject_id, file_name) for subject_id in sys.argv[1:] for file_name in ['bvals', 'bvecs', 'data.nii.gz']]
 for path in s3Paths:
-    print(path)
+    print("file in path: {0}".format(path))
 
-imgRDDs = [sc.binaryFiles(s3path, minPartitions = 290) for s3path in s3Paths]
+imgRDDs = [sc.binaryFiles(s3path, minPartitions=290) for s3path in s3Paths]
 imgRDD = sc.union(imgRDDs).map(rekey).cache()
 imgRDD.count()
 
@@ -143,10 +152,11 @@ imgRDD.count()
 gtabRDD = imgRDD.filter(filterbvs)
 gtabRDD = gtabRDD.map(rekeygtab)
 gtabRDD = gtabRDD.map(lambda nameTuple: (nameTuple[0], [ nameTuple[1] ])).reduceByKey(lambda a, b: a + b).cache()
+print(gtabRDD.take(3))
 gtabRDD = gtabRDD.map(buildgtab)
 
 gtb = gtabRDD.first()
-maskids  = np.where(gtb[1].b0s_mask)
+maskids = np.where(gtb[1].b0s_mask)
 broadcastVar = sc.broadcast(maskids)
 
 # broadcast gtab:

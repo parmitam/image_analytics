@@ -33,6 +33,7 @@
         - git
         - python-dev
         - gcc
+        - openjdk-8-jdk-headless
     - name: Clone repository from github
       git:
         repo: 'https://github.com/tpawlowski/image_analytics.git'
@@ -52,3 +53,6 @@
         src: aws_credentials
         dest: '{{ homedir }}/.aws/credentials'
         mode: 0600
+    - name: Install spark
+      import_role:
+        name: spark

@@ -68,16 +68,33 @@ python ref/main.py 100307
 ```
 
 ## Dask
-Start dask scheduler and workers (in multiple consoles/machines):
+Start dask scheduler on one machine with command:
 ```
 dask-scheduler
-dask-worker SHEDULER_IP:8786
-dask-worker SHEDULER_IP:8786
-dask-worker SHEDULER_IP:8786
-dask-worker SHEDULER_IP:8786
+```
+
+On any number of other machines start worker process with command (replace SCHEDULER_IP with ip address of scheduler machine):
+```
+dask-worker SCHEDULER_IP:8786
 ```
 
 On scheduler machine execute:
 ```
-python dask/main.py 100307 100408
+python dask/main.py SUBJECT_ID [SUBJECT_ID ...]
+```
+
+## Spark
+Start spark master process on one machine:
+```
+~/spark/sbin/start-master.sh
+```
+
+Start spark slaves on any machines:
+```
+~/spark/sbin/start-slave.sh spark://MASTER_IP:7077
+```
+
+Starting execution requires running on master machine:
+```
+python spark/main.py SUBJECT_ID [SUBJECT_ID ...]
 ```
