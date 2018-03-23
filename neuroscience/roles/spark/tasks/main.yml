@@ -18,12 +18,20 @@
     command: tar -C spark -zxf /tmp/spark-2.3.0-bin-hadoop2.7.tgz --strip-components=1
     args:
       chdir: '{{ homedir }}'
-
-  - name: Download jars for s3 support
-    get_url:
-      url: '{{ item }}'
-      dest: '{{ homedir }}/spark/jars'
-    with_items:
-      - http://central.maven.org/maven2/org/apache/hadoop/hadoop-aws/2.7.3/hadoop-aws-2.7.3.jar
-      - http://central.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar
   when: spark_stat.stat.exists == False
+
+- name: Download jars for s3 support
+  get_url:
+    url: '{{ item }}'
+    dest: '{{ homedir }}/spark/jars'
+  with_items:
+    - http://central.maven.org/maven2/org/apache/hadoop/hadoop-aws/2.7.3/hadoop-aws-2.7.3.jar
+    - http://central.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar
+- name: Download jars for s3 support
+  become: true
+  get_url:
+    url: '{{ item }}'
+    dest: '/usr/local/lib/python2.7/dist-packages/pyspark/jars'
+  with_items:
+    - http://central.maven.org/maven2/org/apache/hadoop/hadoop-aws/2.7.3/hadoop-aws-2.7.3.jar
+    - http://central.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar

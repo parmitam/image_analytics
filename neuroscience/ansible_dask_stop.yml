@@ -3,19 +3,23 @@
   gather_facts: false
   tasks:
     - name: Stop dask worker
-      shell: "start-stop-daemon --stop --quiet --pidfile ~/dask-worker.pid"
+      shell: "start-stop-daemon --stop --quiet --pidfile ~/dask/worker.pid"
       register: verification
       changed_when: verification.rc == 0
       failed_when: verification.rc not in [0,1]
-    - name: Clean after working directory
-      file:
-        state: absent
-        path: "/home/{{ ansible_user }}/dask-worker-space"
 - hosts: masters
   gather_facts: false
   tasks:
     - name: Stop dask scheduler
-      shell: 'start-stop-daemon --stop --quiet  --pidfile ~/dask-scheduler.pid'
+      shell: 'start-stop-daemon --stop --quiet  --pidfile ~/dask/scheduler.pid'
       register: verification
       changed_when: verification.rc == 0
       failed_when: verification.rc not in [0,1]
+- hosts: all
+  strategy: free
+  gather_facts: false
+  tasks:
+    - name: Clean after working directory
+      file:
+        state: absent
+        path: "/home/{{ ansible_user }}/dask"

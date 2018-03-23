@@ -7,8 +7,13 @@
     - name: Save masters ip to variable
       set_fact: ip="{{ ifconfig.stdout }}"
     - debug: msg="{{ ip }}"
+    - name: Create dask directory
+      file:
+        state: directory
+        path: "/home/{{ ansible_user }}/dask"
+        mode: 0755
     - name: Start dask scheduler
-      shell: 'start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask-scheduler.pid --background --startas /bin/bash -- -c "exec dask-scheduler >~/dask-scheduler.log 2>&1"'
+      shell: 'start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask/scheduler.pid --background --startas /bin/bash -- -c "exec dask-scheduler >~/dask/scheduler.log 2>&1"'
       register: verification
       changed_when: verification.rc == 0
       failed_when: verification.rc not in [0,1]
@@ -16,8 +21,13 @@
   strategy: free
   gather_facts: false
   tasks:
+    - name: Create dask directory
+      file:
+        state: directory
+        path: "/home/{{ ansible_user }}/dask"
+        mode: 0755
     - name: Start dask worker
-      shell: "start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask-worker.pid --background --startas /bin/bash -- -c 'cd /home/{{ ansible_user }} && exec dask-worker {{ hostvars['master']['ip'] }}:8786 >~/dask-worker.log 2>&1'"
+      shell: "start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask/worker.pid --background --startas /bin/bash -- -c 'cd ~/dask && exec dask-worker {{ hostvars['master']['ip'] }}:8786 --local-directory ~/dask/worker-space >~/dask/worker.log 2>&1'"
       register: verification
       changed_when: verification.rc == 0
       failed_when: verification.rc not in [0,1]

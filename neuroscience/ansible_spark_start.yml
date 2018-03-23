@@ -1,0 +1,29 @@
+- hosts: masters
+  gather_facts: false
+  tasks:
+    - name: Check IP
+      command: bash -c "ifconfig | grep 'inet addr:' | grep -v '127.0.0.1' | cut -f2 -d':' | cut -f1 -d' '"
+      register: ifconfig
+    - name: Save masters ip to variable
+      set_fact: ip="{{ ifconfig.stdout }}"
+    - debug: msg="{{ ip }}"
+    - name: Check spark master
+      shell: 'jps | grep Master'
+      register: jps_master
+      changed_when: jps_master.stdout == ''
+      failed_when: jps_master.rc not in [0,1]
+    - name: Start spark master
+      shell: '~/spark/sbin/start-master.sh'
+      when: jps_master.stdout == ''
+- hosts: all
+  strategy: free
+  gather_facts: false
+  tasks:
+    - name: Check spark worker
+      shell: 'jps | grep Worker'
+      register: jps_worker
+      changed_when: jps_worker.stdout == ''
+      failed_when: jps_worker.rc not in [0,1]
+    - name: Start spark slave
+      shell: "~/spark/sbin/start-slave.sh spark://{{ hostvars['master']['ip'] }}:7077"
+      when: jps_worker.stdout == ''

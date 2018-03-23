@@ -129,8 +129,7 @@ from pyspark import SparkContext, SparkConf
 conf = SparkConf()\
     .setAppName('neuroscience')\
     .setMaster('spark://127.0.0.1:7077')\
-    .set("spark.executor.instances", "1")\
-    .set("spark.executor.memory", "12g")
+    .setMaster('spark://127.0.0.1:7077')
 sc = SparkContext(conf=conf)
 
 config_parser = configparser.ConfigParser()
