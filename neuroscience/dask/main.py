@@ -35,7 +35,6 @@ def download(subject_id, output_directory='.'):
             print("Done")
 
 
-
 def prepare_data(subject_id):
   download(subject_id)
 

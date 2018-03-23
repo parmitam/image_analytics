@@ -1,0 +1,23 @@
+- hosts: masters
+  gather_facts: false
+  tasks:
+    - name: Check IP
+      command: bash -c "ifconfig | grep 'inet addr:' | grep -v '127.0.0.1' | cut -f2 -d':' | cut -f1 -d' '"
+      register: ifconfig
+    - name: Save masters ip to variable
+      set_fact: ip="{{ ifconfig.stdout }}"
+    - debug: msg="{{ ip }}"
+    - name: Start dask scheduler
+      shell: 'start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask-scheduler.pid --background --startas /bin/bash -- -c "exec dask-scheduler >~/dask-scheduler.log 2>&1"'
+      register: verification
+      changed_when: verification.rc == 0
+      failed_when: verification.rc not in [0,1]
+- hosts: all
+  strategy: free
+  gather_facts: false
+  tasks:
+    - name: Start dask worker
+      shell: "start-stop-daemon --start --quiet --make-pidfile --pidfile ~/dask-worker.pid --background --startas /bin/bash -- -c 'cd /home/{{ ansible_user }} && exec dask-worker {{ hostvars['master']['ip'] }}:8786 >~/dask-worker.log 2>&1'"
+      register: verification
+      changed_when: verification.rc == 0
+      failed_when: verification.rc not in [0,1]

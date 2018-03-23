@@ -1,4 +1,5 @@
 - hosts: all
+  strategy: free
   name: Clone github repo and install dependencies.
   vars:
     homedir: '/home/{{ ansible_user }}'

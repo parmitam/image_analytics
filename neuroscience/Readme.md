@@ -21,13 +21,29 @@ Firstly you need to install Ansible locally. You can do it using [this tutorial]
 Secondly prepare two files `hosts` and `aws_credentials`. First will tell Ansible to what servers deploy the app. 
 Example of `hosts` file for aws ec2 servers:
 ```
-[test_group]
+[masters]
 18.196.69.101 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
+
+[slaves]
 18.196.69.102 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
 18.196.69.103 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
 18.196.69.104 ansible_user=ubuntu ansible_ssh_private_key_file=tests.pem
 ```
 IP-s at the beginning of each line represents server IP. tests.pem in the example is local path to pem key assigned to this instance. 
+
+For Azure cloud cluster this file may look as follows:
+```
+[masters]
+master ansible_host=test.westus2.cloudapp.azure.com ansible_port=50001 ansible_user=ubuntu ansible_ssh_pass=PASS
+
+[slaves]
+slave1 ansible_host=test.westus2.cloudapp.azure.com ansible_port=50002 ansible_user=ubuntu ansible_ssh_pass=PASS
+slave2 ansible_host=test.westus2.cloudapp.azure.com ansible_port=50003 ansible_user=ubuntu ansible_ssh_pass=PASS
+slave3 ansible_host=test.westus2.cloudapp.azure.com ansible_port=50004 ansible_user=ubuntu ansible_ssh_pass=PASS
+slave4 ansible_host=test.westus2.cloudapp.azure.com ansible_port=50005 ansible_user=ubuntu ansible_ssh_pass=PASS
+slave5 ansible_host=test.westus2.cloudapp.azure.com ansible_port=50006 ansible_user=ubuntu ansible_ssh_pass=PASS
+```
+Note: inlining password in hosts file may not be safe and requires installing sshpass on local machine.
 
 File `aws_credentials` should contain valid s3 hcp credentials. It will be copied to `~/.aws/credentials` on each 
 deployed server.
@@ -78,10 +94,24 @@ On any number of other machines start worker process with command (replace SCHED
 dask-worker SCHEDULER_IP:8786
 ```
 
-On scheduler machine execute:
+Ansible playbooks `ansible_dask_start.yml` and `ansible_dask_stop.yml` automates starting dask cluster described in `hosts` file.
+Starting dask on all machines of the cluster:
+```
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./hosts ansible_dask_start.yml
+```
+
+Stopping dask:
+```
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./hosts ansible_dask_stop.yml
+```
+
+To run benchmark run following command on scheduler machine:
 ```
 python dask/main.py SUBJECT_ID [SUBJECT_ID ...]
 ```
+
+Note: If you forward port 8786 from scheduler machine to your machine you would be able to schedule tasks from your pc.
+Forwarding ports can be achieved using `ssh`: `ssh -L 8786:127.0.0.1:8786 ...`.
 
 ## Spark
 Start spark master process on one machine:
