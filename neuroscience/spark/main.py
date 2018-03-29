@@ -32,7 +32,7 @@ def downloadImages(x):
     file_name = '/tmp/{0}_data.nii.gz'.format(subject_id)
     img = nib.load(file_name)
     data = img.get_data()
-    result = [((subject_id, str(i)), data[..., i]) for i in range(data.shape[-1])]
+    result = [((subject_id, i), data[..., i]) for i in range(data.shape[-1])]
     os.remove(file_name)
     return result
 
@@ -127,7 +127,6 @@ def regroup(x):
     state = None
     for a in list(x[1]):
         imgid = a[0][2]
-        print(imgid)
         img = np.asarray(a[1][0])
         if state is None:
             shape = img.shape + (288,)
@@ -142,7 +141,7 @@ def regroup(x):
 def fit_model(dt, gtab):
     import dipy.reconst.dti as dti
     subjid = dt[0][0]
-    ten_model = dti.TensorModel(gtab.value[str(subjid)], min_signal=1)
+    ten_model = dti.TensorModel(gtab.value[str(subjid)],min_signal=1)
     ten_fit = ten_model.fit(dt[1][0], mask=dt[1][1])
     return (dt[0],ten_fit)
 
