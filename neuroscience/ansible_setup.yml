@@ -39,7 +39,8 @@
       git:
         repo: 'https://github.com/tpawlowski/image_analytics.git'
         dest: '{{ rootdir }}'
-        update: no
+        update: yes
+        force: yes
     - name: Install requirements
       become: true
       pip:

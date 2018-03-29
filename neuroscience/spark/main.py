@@ -29,10 +29,12 @@ def download(subject_id, output_directory='.'):
 def downloadImages(x):
     (subject_id, _), s3path = x
     download(subject_id, '/tmp')
-    file_prefix = '/tmp/{0}_'.format(subject_id)
-    img = nib.load(file_prefix + 'data.nii.gz')
+    file_name = '/tmp/{0}_data.nii.gz'.format(subject_id)
+    img = nib.load(file_name)
     data = img.get_data()
-    return [((subject_id, str(i)), data[..., i]) for i in range(data.shape[-1])]
+    result = [((subject_id, str(i)), data[..., i]) for i in range(data.shape[-1])]
+    os.remove(file_name)
+    return result
 
 def filterbvs(x):
     if x[0][1] == 'bvals' or x[0][1] == 'bvecs':
@@ -196,21 +198,21 @@ bcastGtab = sc.broadcast(gtabRDD.collectAsMap())
 maskrawRDD = imgRDD.filter(filterformask).cache()
 maskRDD = maskrawRDD.groupBy(lambda x: (x[0][0]))
 maskRDD1 = maskRDD.map(meanval)
-maskRDD2 = maskRDD1.map(lambda x: buildmask(x,bcastGtab))
+maskRDD2 = maskRDD1.map(lambda x: buildmask(x, bcastGtab))
 bcastMask = sc.broadcast(maskRDD2.collectAsMap())
 print("{0} masked".format(datetime.datetime.now()))
 
-denoisedRDD = imgRDD.map(lambda x:denoise(x,bcastMask))
+denoisedRDD = imgRDD.map(lambda x: denoise(x, bcastMask))
 denoisedRDD = denoisedRDD.flatMap(lambda x: repart(x, bcastMask))
 
 print("{0} denoised".format(datetime.datetime.now()))
 # reduce by key
-denoisedRDD = denoisedRDD.groupBy(lambda x: (x[0][0],x[0][1]))
+denoisedRDD = denoisedRDD.groupBy(lambda x: (x[0][0], x[0][1]))
 print("{0} grouped".format(datetime.datetime.now()))
 tmRDD = denoisedRDD.map(regroup)
 print("{0} regrouped".format(datetime.datetime.now()))
 
-tmmRDD = tmRDD.map(lambda x: fit_model(x,bcastGtab )).cache()
+tmmRDD = tmRDD.map(lambda x: fit_model(x, bcastGtab)).cache()
 tmmRDD.count()
 
 print("{0} done".format(datetime.datetime.now()))
