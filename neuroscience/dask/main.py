@@ -1,38 +1,44 @@
+import os.path as op
 import boto3
-from multiprocessing import Process, Array
 import nibabel as nib
 import numpy as np
-import os.path as op
-import sys, time, itertools, timeit
+import time, itertools, timeit
 
 import dipy.core.gradients as dpg
 import dipy.reconst.dti as dti
+import sys
+from dask import delayed
 from dipy.segment.mask import median_otsu
 from dipy.denoise import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 
 # use multi-processes
-from dask import delayed, compute
-import dask.multiprocessing 
-from distributed import Executor
-import distributed
-
-subjects = [
-"..."]
+from distributed import Client
 
 
-def download (id):
-  print("downloading:", id)
-  
-  session = boto3.session.Session()
-  s3 = session.resource('s3')
-  s3.meta.client.download_file('...', id + "/data.nii.gz", id + "_data.nii.gz")
-  s3.meta.client.download_file('...', id + "/bvecs", id + "_bvecs")
-  s3.meta.client.download_file('...', id + "/bvals", id + "_bvals")
-  
-  print("downloaded", id)
+subjects = sys.argv[1:]
 
-  datafile = id + "_data.nii.gz"
+
+def download(subject_id, output_directory='.'):
+    boto3.setup_default_session(profile_name='hcp')
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('hcp-openaccess')
+
+    for file_name in ['bvals', 'bvecs', 'data.nii.gz']:
+        output_path = '{0}/{1}_{2}'.format(output_directory, subject_id, file_name)
+        if op.exists(output_path):
+            print("Using previously downloaded {0}".format(output_path))
+        else:
+            source_path = 'HCP/{0}/T1w/Diffusion/{1}'.format(subject_id, file_name)
+            print("Downloading {0} to {1}".format(source_path, output_path))
+            bucket.download_file(source_path, output_path)
+            print("Done")
+
+
+def prepare_data(subject_id):
+  download(subject_id)
+
+  datafile = subject_id + "_data.nii.gz"
   print("loading data file:", datafile)
   img = nib.load(datafile)
   data = img.get_data()
@@ -184,22 +190,15 @@ class Metadata:
     self.mask_slices = None
 
 
-def run (ids, workers):
-
+def run(ids, workers):
   start = time.time()
     
   for i in range(len(ids)):
 
     id = ids[i]
-
-    #images, affine = download(id)
-    #filtered, gtab = filter(id, images)
-    
-    #r = delayed(download)(id)
-    #images, images_shape, affine = r[0], r[1], r[2]
     
     j = i % len(workers)
-    r = e.submit(download, id, workers=[workers[j]])
+    r = e.submit(prepare_data, id, workers=[workers[j]])
     print("id:", id, "assigned to worker:", workers[j])
     import operator
     images, images_shape, affine = [e.submit(operator.getitem, r, i) for i in [0,1,2]]
@@ -362,18 +361,19 @@ def run (ids, workers):
   print("time to run entire pipeline:", ((time.time() - start)))
 
 
-
-
 if __name__ == "__main__":
+  e = Client("localhost:8786")
+  if len(sys.argv) < 2:
+    print("Please provide subject ids as parameters")
+    sys.exit(0)
 
-  e = Executor("localhost:8786")
+  i = len(subjects)
 
   meta = {}
 
-  for i in [1,2,4,8,12,25]:
-    e.restart()
-    workers = list(e.has_what())
-    print("workers:", workers)
-    r = timeit.timeit("run(subjects[0:i], workers)",
-                      "gc.enable(); from __main__ import run, subjects, i, meta, workers", number=1)
-    print("# ids:", i, "time:", r)
+  e.restart()
+  workers = list(e.has_what())
+  print("workers:", workers)
+  r = timeit.timeit("run(subjects[:i], workers)",
+                    "gc.enable(); from __main__ import run, subjects, i, meta, workers", number=1)
+  print("# ids:", i, "time:", r)

@@ -1,0 +1,23 @@
+- hosts: all
+  strategy: free
+  gather_facts: false
+  tasks:
+    - name: Check spark worker
+      shell: 'jps | grep Worker'
+      register: jps_worker
+      changed_when: jps_worker.stdout != ''
+      failed_when: jps_worker.rc not in [0,1]
+    - name: Stop spark slave
+      shell: "~/spark/sbin/stop-slave.sh"
+      when: jps_worker.stdout != ''
+- hosts: masters
+  gather_facts: false
+  tasks:
+    - name: Check spark master
+      shell: 'jps | grep Master'
+      register: jps_master
+      changed_when: jps_master.stdout != ''
+      failed_when: jps_master.rc not in [0,1]
+    - name: Stop spark master
+      shell: '~/spark/sbin/stop-master.sh'
+      when: jps_master.stdout != ''
